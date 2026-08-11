@@ -17,6 +17,7 @@ Many farmers face difficulties in accessing water efficiently due to the lack of
 - Water Usage Analytics
 - Soil Moisture Monitoring
 - Water Request Form
+
 - Notifications and Alerts
 - User Profile Management
 - Responsive User Interface
