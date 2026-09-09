@@ -3,16 +3,17 @@ const cors = require("cors");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
-const WaterResource = require("./WaterResource");
+const WaterResource = require("./models/WaterResource");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 
-mongoose.connect(process.env.MONGO_URI)
+mongoose
+    .connect(process.env.MONGO_URI)
     .then(() => console.log("MongoDB connected"))
-    .catch((err) => console.log("MongoDB connection error:", err));
+    .catch((err) => console.log("MongoDB connection error:", err.message));
 
 app.get("/", (req, res) => {
     res.json({ message: "Water Resources API is running" });
