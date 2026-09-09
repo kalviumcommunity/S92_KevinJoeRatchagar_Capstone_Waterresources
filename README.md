@@ -37,6 +37,33 @@ Many farmers face difficulties in accessing water efficiently due to the lack of
 ### Database
 - MongoDB
 
+## Run locally
+
+1. Create `server/.env` with a valid MongoDB connection string:
+
+```env
+MONGO_URI=mongodb+srv://<username>:<password>@<cluster>/<database>
+PORT=5000
+```
+
+2. Start the API:
+
+```bash
+cd server
+npm install
+npm start
+```
+
+3. Start the React client in another terminal:
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+The client reads and writes water resources through `GET` and `POST` at `/api/water-resources`. It also supports `DELETE /api/water-resources/:id`.
+
 ### Tools
 - Git
 - GitHub
