@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 const WaterResource = require("./models/WaterResource");
+const Farmer = require("./models/Farmer");
 
 const app = express();
 
@@ -11,13 +12,14 @@ app.use(express.json());
 // POST API - Create a new water resource
 app.post("/api/water-resources", async(req, res) => {
     try {
-        const { name, type, location, description } = req.body;
+        const { name, type, location, description, farmer } = req.body;
 
         const waterResource = new WaterResource({
             name,
             type,
             location,
             description,
+            farmer,
         });
 
         const savedResource = await waterResource.save();
@@ -31,10 +33,24 @@ app.post("/api/water-resources", async(req, res) => {
     }
 });
 
+// GET API - Get all water resources with farmer details
+app.get("/api/water-resources", async(req, res) => {
+    try {
+        const resources = await WaterResource.find().populate("farmer");
+
+        res.status(200).json(resources);
+    } catch (error) {
+        res.status(500).json({
+            message: "Failed to fetch water resources",
+            error: error.message,
+        });
+    }
+});
+
 // PUT API - Update a water resource
 app.put("/api/water-resources/:id", async(req, res) => {
     try {
-        const { name, type, location, description } = req.body;
+        const { name, type, location, description, farmer } = req.body;
 
         const updatedResource = await WaterResource.findByIdAndUpdate(
             req.params.id, {
@@ -42,11 +58,12 @@ app.put("/api/water-resources/:id", async(req, res) => {
                 type,
                 location,
                 description,
+                farmer,
             }, {
                 new: true,
                 runValidators: true,
             }
-        );
+        ).populate("farmer");
 
         if (!updatedResource) {
             return res.status(404).json({
