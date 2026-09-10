@@ -31,6 +31,64 @@ app.post("/api/water-resources", async(req, res) => {
     }
 });
 
+// PUT API - Update a water resource
+app.put("/api/water-resources/:id", async(req, res) => {
+    try {
+        const { name, type, location, description } = req.body;
+
+        const updatedResource = await WaterResource.findByIdAndUpdate(
+            req.params.id, {
+                name,
+                type,
+                location,
+                description,
+            }, {
+                new: true,
+                runValidators: true,
+            }
+        );
+
+        if (!updatedResource) {
+            return res.status(404).json({
+                message: "Water resource not found",
+            });
+        }
+
+        res.status(200).json(updatedResource);
+    } catch (error) {
+        res.status(400).json({
+            message: "Failed to update water resource",
+            error: error.message,
+        });
+    }
+});
+
+// DELETE API - Delete a water resource
+app.delete("/api/water-resources/:id", async(req, res) => {
+    try {
+        const deletedResource = await WaterResource.findByIdAndDelete(
+            req.params.id
+        );
+
+        if (!deletedResource) {
+            return res.status(404).json({
+                message: "Water resource not found",
+            });
+        }
+
+        res.status(200).json({
+            message: "Water resource deleted successfully",
+            deletedResource,
+        });
+    } catch (error) {
+        res.status(400).json({
+            message: "Failed to delete water resource",
+            error: error.message,
+        });
+    }
+});
+
+// MongoDB connection
 mongoose
     .connect(process.env.MONGO_URI)
     .then(() => {
