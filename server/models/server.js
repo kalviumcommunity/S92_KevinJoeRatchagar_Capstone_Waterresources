@@ -1,5 +1,4 @@
 const express = require("express");
-const cors = require("cors");
 const mongoose = require("mongoose");
 require("dotenv").config();
 
@@ -7,38 +6,40 @@ const WaterResource = require("./models/WaterResource");
 
 const app = express();
 
-app.use(cors());
 app.use(express.json());
+
+// POST API - Create a new water resource
+app.post("/api/water-resources", async(req, res) => {
+    try {
+        const { name, type, location, description } = req.body;
+
+        const waterResource = new WaterResource({
+            name,
+            type,
+            location,
+            description,
+        });
+
+        const savedResource = await waterResource.save();
+
+        res.status(201).json(savedResource);
+    } catch (error) {
+        res.status(400).json({
+            message: "Failed to create water resource",
+            error: error.message,
+        });
+    }
+});
 
 mongoose
     .connect(process.env.MONGO_URI)
-    .then(() => console.log("MongoDB connected"))
-    .catch((err) => console.log("MongoDB connection error:", err.message));
+    .then(() => {
+        console.log("MongoDB connected successfully");
 
-app.get("/", (req, res) => {
-    res.json({ message: "Water Resources API is running" });
-});
-
-app.post("/api/water-resources", async(req, res) => {
-    try {
-        const resource = await WaterResource.create(req.body);
-        res.status(201).json(resource);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
-    }
-});
-
-app.get("/api/water-resources", async(req, res) => {
-    try {
-        const resources = await WaterResource.find();
-        res.json(resources);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
-
-const PORT = process.env.PORT || 5000;
-
-app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-});
+        app.listen(5000, () => {
+            console.log("Server running on port 5000");
+        });
+    })
+    .catch((error) => {
+        console.error("MongoDB connection failed:", error.message);
+    });
