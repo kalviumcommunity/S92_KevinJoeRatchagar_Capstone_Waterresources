@@ -16,6 +16,13 @@ const waterResourceSchema = new mongoose.Schema({
     description: {
         type: String,
     },
+
+    // Relationship: WaterResource belongs to a Farmer
+    farmer: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: "Farmer",
+        required: true,
+    },
 }, {
     timestamps: true,
 });
