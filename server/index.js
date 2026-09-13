@@ -1,10 +1,14 @@
 const express = require("express");
 const mongoose = require("mongoose");
 const dns = require("dns");
+const path = require("path");
 
-require("dotenv").config();
+require("dotenv").config({
+    path: path.join(__dirname, ".env"),
+});
 
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 
 const WaterResource = require("./models/WaterResource");
 const Farmer = require("./models/Farmer");
@@ -21,13 +25,48 @@ app.use(express.json());
 dns.setServers(["8.8.8.8", "1.1.1.1"]);
 
 // ===============================
-// AUTHENTICATION
+// JWT AUTHENTICATION MIDDLEWARE
 // ===============================
 
-// Register API
+const authenticateToken = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+
+    const token =
+        authHeader && authHeader.split(" ")[1];
+
+    if (!token) {
+        return res.status(401).json({
+            message: "Access token required",
+        });
+    }
+
+    try {
+        const decoded = jwt.verify(
+            token,
+            process.env.JWT_SECRET
+        );
+
+        req.user = decoded;
+
+        next();
+    } catch (error) {
+        return res.status(403).json({
+            message: "Invalid or expired token",
+        });
+    }
+};
+
+// ===============================
+// REGISTER API
+// ===============================
+
 app.post("/api/auth/register", async(req, res) => {
     try {
-        const { name, email, password } = req.body;
+        const {
+            name,
+            email,
+            password,
+        } = req.body;
 
         if (!name || !email || !password) {
             return res.status(400).json({
@@ -35,7 +74,8 @@ app.post("/api/auth/register", async(req, res) => {
             });
         }
 
-        const existingUser = await User.findOne({ email });
+        const existingUser =
+            await User.findOne({ email });
 
         if (existingUser) {
             return res.status(400).json({
@@ -43,7 +83,8 @@ app.post("/api/auth/register", async(req, res) => {
             });
         }
 
-        const hashedPassword = await bcrypt.hash(password, 10);
+        const hashedPassword =
+            await bcrypt.hash(password, 10);
 
         const user = new User({
             name,
@@ -51,18 +92,22 @@ app.post("/api/auth/register", async(req, res) => {
             password: hashedPassword,
         });
 
-        const savedUser = await user.save();
+        await user.save();
 
         res.status(201).json({
             message: "User registered successfully",
+
             user: {
-                id: savedUser._id,
-                name: savedUser.name,
-                email: savedUser.email,
+                id: user._id,
+                name: user.name,
+                email: user.email,
             },
         });
     } catch (error) {
-        console.error("REGISTER ERROR:", error.message);
+        console.error(
+            "Registration error:",
+            error
+        );
 
         res.status(500).json({
             message: "Registration failed",
@@ -71,10 +116,16 @@ app.post("/api/auth/register", async(req, res) => {
     }
 });
 
-// Login API
+// ===============================
+// LOGIN API
+// ===============================
+
 app.post("/api/auth/login", async(req, res) => {
     try {
-        const { email, password } = req.body;
+        const {
+            email,
+            password,
+        } = req.body;
 
         if (!email || !password) {
             return res.status(400).json({
@@ -82,7 +133,8 @@ app.post("/api/auth/login", async(req, res) => {
             });
         }
 
-        const user = await User.findOne({ email });
+        const user =
+            await User.findOne({ email });
 
         if (!user) {
             return res.status(401).json({
@@ -90,10 +142,11 @@ app.post("/api/auth/login", async(req, res) => {
             });
         }
 
-        const passwordMatch = await bcrypt.compare(
-            password,
-            user.password
-        );
+        const passwordMatch =
+            await bcrypt.compare(
+                password,
+                user.password
+            );
 
         if (!passwordMatch) {
             return res.status(401).json({
@@ -101,8 +154,21 @@ app.post("/api/auth/login", async(req, res) => {
             });
         }
 
+        const token = jwt.sign({
+                userId: user._id,
+                name: user.name,
+                email: user.email,
+            },
+            process.env.JWT_SECRET, {
+                expiresIn: "1d",
+            }
+        );
+
         res.json({
             message: "Login successful",
+
+            token,
+
             user: {
                 id: user._id,
                 name: user.name,
@@ -110,7 +176,10 @@ app.post("/api/auth/login", async(req, res) => {
             },
         });
     } catch (error) {
-        console.error("LOGIN ERROR:", error.message);
+        console.error(
+            "Login error:",
+            error
+        );
 
         res.status(500).json({
             message: "Login failed",
@@ -120,183 +189,257 @@ app.post("/api/auth/login", async(req, res) => {
 });
 
 // ===============================
-// WATER RESOURCE - POST
+// CREATE FARMER
 // ===============================
 
-app.post("/api/water-resources", async(req, res) => {
+app.post("/api/farmers", async(req, res) => {
     try {
         const {
             name,
-            type,
-            location,
-            description,
-            farmer,
+            email,
         } = req.body;
 
-        console.log("========== POST DEBUG ==========");
-        console.log(
-            "Database:",
-            mongoose.connection.db.databaseName
-        );
-        console.log(
-            "Host:",
-            mongoose.connection.host
-        );
-        console.log(
-            "Collection:",
-            WaterResource.collection.name
-        );
-        console.log(
-            "Farmer ID received:",
-            farmer
-        );
+        if (!name || !email) {
+            return res.status(400).json({
+                message: "Name and email are required",
+            });
+        }
 
-        const waterResource = new WaterResource({
+        const existingFarmer =
+            await Farmer.findOne({ email });
+
+        if (existingFarmer) {
+            return res.status(400).json({
+                message: "Farmer already exists",
+            });
+        }
+
+        const farmer = new Farmer({
             name,
-            type,
-            location,
-            description,
-            farmer,
+            email,
         });
 
-        const savedResource = await waterResource.save();
+        const savedFarmer =
+            await farmer.save();
 
-        console.log(
-            "Saved ID:",
-            savedResource._id
-        );
+        res.status(201).json({
+            message: "Farmer created successfully",
 
-        const countAfterSave =
-            await WaterResource.countDocuments();
-
-        console.log(
-            "WaterResource count after save:",
-            countAfterSave
-        );
-
-        console.log("================================");
-
-        res.status(201).json(savedResource);
-    } catch (error) {
-        console.error(
-            "POST ERROR:",
-            error.message
-        );
-
-        res.status(400).json({
-            message: "Failed to create water resource",
-            error: error.message,
-        });
-    }
-});
-
-// ===============================
-// WATER RESOURCE - GET ALL
-// ===============================
-
-app.get("/api/water-resources", async(req, res) => {
-    try {
-        const resources = await WaterResource.find()
-            .populate("farmer");
-
-        res.json({
-            value: resources,
-            Count: resources.length,
+            value: savedFarmer,
         });
     } catch (error) {
         console.error(
-            "GET ERROR:",
-            error.message
+            "Create farmer error:",
+            error
         );
 
         res.status(500).json({
-            message: "Failed to fetch water resources",
+            message: "Failed to create farmer",
+
             error: error.message,
         });
     }
 });
 
 // ===============================
-// WATER RESOURCE - PUT
+// GET ALL FARMERS
 // ===============================
 
-app.put("/api/water-resources/:id", async(req, res) => {
+app.get("/api/farmers", async(req, res) => {
     try {
-        const {
-            name,
-            type,
-            location,
-            description,
-            farmer,
-        } = req.body;
+        const farmers =
+            await Farmer.find();
 
-        const updatedResource =
-            await WaterResource.findByIdAndUpdate(
-                req.params.id, {
+        res.json({
+            value: farmers,
+            Count: farmers.length,
+        });
+    } catch (error) {
+        console.error(
+            "Get farmers error:",
+            error
+        );
+
+        res.status(500).json({
+            message: "Failed to fetch farmers",
+
+            error: error.message,
+        });
+    }
+});
+
+// ===============================
+// CREATE WATER RESOURCE
+// JWT PROTECTED
+// ===============================
+
+app.post(
+    "/api/water-resources",
+    authenticateToken,
+    async(req, res) => {
+        try {
+            const {
+                name,
+                type,
+                location,
+                description,
+                farmer,
+            } = req.body;
+
+            if (!name ||
+                !type ||
+                !location ||
+                !farmer
+            ) {
+                return res.status(400).json({
+                    message: "Name, type, location and farmer are required",
+                });
+            }
+
+            const waterResource =
+                new WaterResource({
                     name,
                     type,
                     location,
                     description,
                     farmer,
-                }, {
-                    new: true,
-                    runValidators: true,
-                }
-            ).populate("farmer");
+                });
 
-        if (!updatedResource) {
-            return res.status(404).json({
-                message: "Water resource not found",
+            const savedResource =
+                await waterResource.save();
+
+            res.status(201).json({
+                message: "Water resource created successfully",
+
+                value: savedResource,
             });
-        }
-
-        res.json(updatedResource);
-    } catch (error) {
-        console.error(
-            "PUT ERROR:",
-            error.message
-        );
-
-        res.status(400).json({
-            message: "Failed to update water resource",
-            error: error.message,
-        });
-    }
-});
-
-// ===============================
-// WATER RESOURCE - DELETE
-// ===============================
-
-app.delete("/api/water-resources/:id", async(req, res) => {
-    try {
-        const deletedResource =
-            await WaterResource.findByIdAndDelete(
-                req.params.id
+        } catch (error) {
+            console.error(
+                "Create water resource error:",
+                error
             );
 
-        if (!deletedResource) {
-            return res.status(404).json({
-                message: "Water resource not found",
+            res.status(500).json({
+                message: "Failed to create water resource",
+
+                error: error.message,
             });
         }
-
-        res.json({
-            message: "Water resource deleted successfully",
-            deletedResource,
-        });
-    } catch (error) {
-        console.error(
-            "DELETE ERROR:",
-            error.message
-        );
-
-        res.status(400).json({
-            message: "Failed to delete water resource",
-            error: error.message,
-        });
     }
-});
+);
+
+// ===============================
+// GET ALL WATER RESOURCES
+// ===============================
+
+app.get(
+    "/api/water-resources",
+    async(req, res) => {
+        try {
+            const resources =
+                await WaterResource.find()
+                .populate("farmer");
+
+            res.json({
+                value: resources,
+                Count: resources.length,
+            });
+        } catch (error) {
+            console.error(
+                "Get water resources error:",
+                error
+            );
+
+            res.status(500).json({
+                message: "Failed to fetch water resources",
+
+                error: error.message,
+            });
+        }
+    }
+);
+
+// ===============================
+// UPDATE WATER RESOURCE
+// ===============================
+
+app.put(
+    "/api/water-resources/:id",
+    async(req, res) => {
+        try {
+            const updatedResource =
+                await WaterResource.findByIdAndUpdate(
+                    req.params.id,
+                    req.body, {
+                        new: true,
+                        runValidators: true,
+                    }
+                );
+
+            if (!updatedResource) {
+                return res.status(404).json({
+                    message: "Water resource not found",
+                });
+            }
+
+            res.json({
+                message: "Water resource updated successfully",
+
+                value: updatedResource,
+            });
+        } catch (error) {
+            console.error(
+                "Update water resource error:",
+                error
+            );
+
+            res.status(500).json({
+                message: "Failed to update water resource",
+
+                error: error.message,
+            });
+        }
+    }
+);
+
+// ===============================
+// DELETE WATER RESOURCE
+// ===============================
+
+app.delete(
+    "/api/water-resources/:id",
+    async(req, res) => {
+        try {
+            const deletedResource =
+                await WaterResource.findByIdAndDelete(
+                    req.params.id
+                );
+
+            if (!deletedResource) {
+                return res.status(404).json({
+                    message: "Water resource not found",
+                });
+            }
+
+            res.json({
+                message: "Water resource deleted successfully",
+
+                value: deletedResource,
+            });
+        } catch (error) {
+            console.error(
+                "Delete water resource error:",
+                error
+            );
+
+            res.status(500).json({
+                message: "Failed to delete water resource",
+
+                error: error.message,
+            });
+        }
+    }
+);
 
 // ===============================
 // MONGODB CONNECTION
@@ -304,35 +447,14 @@ app.delete("/api/water-resources/:id", async(req, res) => {
 
 mongoose
     .connect(process.env.MONGO_URI)
-    .then(async() => {
-        console.log("MongoDB connected successfully");
-
+    .then(() => {
         console.log(
-            "Connected database:",
-            mongoose.connection.db.databaseName
-        );
-
-        console.log(
-            "Connected host:",
-            mongoose.connection.host
-        );
-
-        console.log(
-            "WaterResource collection:",
-            WaterResource.collection.name
-        );
-
-        const count =
-            await WaterResource.countDocuments();
-
-        console.log(
-            "WaterResource document count:",
-            count
+            "MongoDB connected successfully"
         );
 
         app.listen(5000, () => {
             console.log(
-                "Server running on port 5000"
+                "Server running on http://localhost:5000"
             );
         });
     })
