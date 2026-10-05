@@ -1,6 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 require("dotenv").config();
 
 const WaterResource = require("./models/WaterResource");
@@ -10,66 +13,152 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get("/", (req, res) => {
-    res.json({ message: "Water Resources API is running" });
-});
+// Create uploads folder
+const uploadDir = path.join(__dirname, "uploads");
 
-app.get("/api/health", (req, res) => {
-    res.json({ status: "ok", database: mongoose.connection.readyState === 1 ? "connected" : "disconnected" });
-});
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
-app.post("/api/water-resources", async(req, res) => {
-    try {
-        const resource = await WaterResource.create(req.body);
-        res.status(201).json(resource);
-    } catch (err) {
-        res.status(400).json({ message: err.message });
+// Multer configuration
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, uploadDir);
+    },
+
+    filename: (req, file, cb) => {
+        const uniqueName = Date.now() + "-" + file.originalname;
+        cb(null, uniqueName);
     }
 });
 
+const upload = multer({
+    storage: storage
+});
+
+// Make uploaded files accessible
+app.use("/uploads", express.static(uploadDir));
+
+// Home route
+app.get("/", (req, res) => {
+    res.json({
+        message: "Water Resources API is running"
+    });
+});
+
+// Health check
+app.get("/api/health", (req, res) => {
+    res.json({
+        status: "ok",
+        database: mongoose.connection.readyState === 1 ?
+            "connected" : "disconnected"
+    });
+});
+
+// File upload API
+app.post("/api/upload", upload.single("file"), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                message: "No file uploaded"
+            });
+        }
+
+        res.status(200).json({
+            message: "File uploaded successfully",
+            filename: req.file.filename,
+            originalName: req.file.originalname,
+            size: req.file.size,
+            url: `/uploads/${req.file.filename}`
+        });
+    } catch (err) {
+        res.status(500).json({
+            message: "File upload failed",
+            error: err.message
+        });
+    }
+});
+
+// Create water resource
+app.post("/api/water-resources", async(req, res) => {
+    try {
+        const resource = await WaterResource.create(req.body);
+
+        res.status(201).json(resource);
+    } catch (err) {
+        res.status(400).json({
+            message: err.message
+        });
+    }
+});
+
+// Get all water resources
+app.get("/api/water-resources", async(req, res) => {
+    try {
+        const resources = await WaterResource.find();
+
+        res.json(resources);
+    } catch (err) {
+        res.status(500).json({
+            message: err.message
+        });
+    }
+});
+
+// Delete water resource
 app.delete("/api/water-resources/:id", async(req, res) => {
     try {
-        const resource = await WaterResource.findByIdAndDelete(req.params.id);
+        const resource = await WaterResource.findByIdAndDelete(
+            req.params.id
+        );
 
         if (!resource) {
-            return res.status(404).json({ message: "Water resource not found" });
+            return res.status(404).json({
+                message: "Water resource not found"
+            });
         }
 
         res.status(204).send();
     } catch (err) {
-        res.status(400).json({ message: "Invalid water resource id" });
+        res.status(400).json({
+            message: "Invalid water resource id"
+        });
     }
 });
 
+// Server port
 const PORT = process.env.PORT || 5000;
 
+// Start server
 async function startServer() {
-    if (!process.env.MONGO_URI) {
-        throw new Error("MONGO_URI is not configured");
+    if (!process.env.MONGODB_URI) {
+        throw new Error("MONGODB_URI is not configured");
     }
 
-    await mongoose.connect(process.env.MONGO_URI);
+    await mongoose.connect(process.env.MONGODB_URI);
+
     console.log("MongoDB connected");
 
     return app.listen(PORT, () => {
-        console.log(`Server running on http://localhost:${PORT}`);
+        console.log(
+            `Server running on http://localhost:${PORT}`
+        );
     });
 }
 
+// Start only when running this file directly
 if (require.main === module) {
     startServer().catch((err) => {
-        console.error("MongoDB connection error:", err.message);
+        console.error(
+            "MongoDB connection error:",
+            err.message
+        );
+
         process.exitCode = 1;
     });
 }
 
-module.exports = { app, startServer };
-
-app.get("/api/water-resources", async(req, res) => {
-    try {
-        const resources = await WaterResource.find();
-        res.json(resources);
-    } catch (err) {
-        res.status(500).json({ message: err.message });
-    }
-});
+module.exports = {
+    app,
+    startServer
+};
