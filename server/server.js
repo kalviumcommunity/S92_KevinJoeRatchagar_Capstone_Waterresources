@@ -1,3 +1,8 @@
+const dns = require("dns");
+
+// Fix MongoDB Atlas SRV DNS resolution in Node.js
+dns.setServers(["8.8.8.8", "1.1.1.1"]);
+
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
@@ -13,33 +18,7 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Create uploads folder
-const uploadDir = path.join(__dirname, "uploads");
-
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Multer configuration
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => {
-        cb(null, uploadDir);
-    },
-
-    filename: (req, file, cb) => {
-        const uniqueName = Date.now() + "-" + file.originalname;
-        cb(null, uniqueName);
-    }
-});
-
-const upload = multer({
-    storage: storage
-});
-
-// Make uploaded files accessible
-app.use("/uploads", express.static(uploadDir));
-
-// Home route
+// Root route
 app.get("/", (req, res) => {
     res.json({
         message: "Water Resources API is running"
@@ -114,14 +93,14 @@ app.delete("/api/water-resources/:id", async(req, res) => {
 
         if (!resource) {
             return res.status(404).json({
-                message: "Water resource not found"
+                message: "Water resource not found",
             });
         }
 
         res.status(204).send();
     } catch (err) {
         res.status(400).json({
-            message: "Invalid water resource id"
+            message: "Invalid water resource id",
         });
     }
 });
