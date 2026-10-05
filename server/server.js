@@ -6,6 +6,9 @@ dns.setServers(["8.8.8.8", "1.1.1.1"]);
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 require("dotenv").config();
 
 const WaterResource = require("./models/WaterResource");
@@ -17,7 +20,9 @@ app.use(express.json());
 
 // Root route
 app.get("/", (req, res) => {
-    res.json({ message: "Water Resources API is running" });
+    res.json({
+        message: "Water Resources API is running"
+    });
 });
 
 // Health check
@@ -25,8 +30,32 @@ app.get("/api/health", (req, res) => {
     res.json({
         status: "ok",
         database: mongoose.connection.readyState === 1 ?
-            "connected" : "disconnected",
+            "connected" : "disconnected"
     });
+});
+
+// File upload API
+app.post("/api/upload", upload.single("file"), (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({
+                message: "No file uploaded"
+            });
+        }
+
+        res.status(200).json({
+            message: "File uploaded successfully",
+            filename: req.file.filename,
+            originalName: req.file.originalname,
+            size: req.file.size,
+            url: `/uploads/${req.file.filename}`
+        });
+    } catch (err) {
+        res.status(500).json({
+            message: "File upload failed",
+            error: err.message
+        });
+    }
 });
 
 // Create water resource
@@ -37,7 +66,7 @@ app.post("/api/water-resources", async(req, res) => {
         res.status(201).json(resource);
     } catch (err) {
         res.status(400).json({
-            message: err.message,
+            message: err.message
         });
     }
 });
@@ -50,7 +79,7 @@ app.get("/api/water-resources", async(req, res) => {
         res.json(resources);
     } catch (err) {
         res.status(500).json({
-            message: err.message,
+            message: err.message
         });
     }
 });
@@ -76,6 +105,7 @@ app.delete("/api/water-resources/:id", async(req, res) => {
     }
 });
 
+// Server port
 const PORT = process.env.PORT || 5000;
 
 // Start server
@@ -89,19 +119,25 @@ async function startServer() {
     console.log("MongoDB connected");
 
     return app.listen(PORT, () => {
-        console.log(`Server running on http://localhost:${PORT}`);
+        console.log(
+            `Server running on http://localhost:${PORT}`
+        );
     });
 }
 
-// Start only when this file is executed directly
+// Start only when running this file directly
 if (require.main === module) {
     startServer().catch((err) => {
-        console.error("MongoDB connection error:", err.message);
+        console.error(
+            "MongoDB connection error:",
+            err.message
+        );
+
         process.exitCode = 1;
     });
 }
 
 module.exports = {
     app,
-    startServer,
+    startServer
 };
