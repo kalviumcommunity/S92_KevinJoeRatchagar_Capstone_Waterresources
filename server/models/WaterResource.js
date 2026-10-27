@@ -16,6 +16,9 @@ const waterResourceSchema = new mongoose.Schema({
     description: {
         type: String,
     },
+    condition: {
+        type: String,
+    },
 
     // Relationship: WaterResource belongs to a Farmer
     farmer: {

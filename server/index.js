@@ -26,6 +26,7 @@ const passport = require("./config/passport");
 const WaterResource = require("./models/WaterResource");
 const Farmer = require("./models/Farmer");
 const User = require("./models/User");
+const { generateDescription } = require("./services/descriptionGenerator");
 
 // =====================================================
 // EXPRESS APP
@@ -158,7 +159,7 @@ app.post("/api/auth/register", async(req, res) => {
             name,
             email,
             password,
-        } = req.body;
+        } = req.body || {};
 
         if (!name || !email || !password) {
             return res.status(400).json({
@@ -421,6 +422,46 @@ app.get(
 // WATER RESOURCE API
 // =====================================================
 
+app.post("/api/ai/description", async(req, res) => {
+    const {
+        name,
+        type,
+        location,
+        condition = "",
+    } = req.body;
+
+    if (![name, type, location].every(
+        (value) => typeof value === "string" && value.trim()
+    )) {
+        return res.status(400).json({
+            message: "Name, type and location are required to suggest a description.",
+        });
+    }
+
+    if ([name, type, location, condition].some(
+        (value) => typeof value !== "string" || value.length > 500
+    )) {
+        return res.status(400).json({
+            message: "Resource details must be text with no more than 500 characters each.",
+        });
+    }
+
+    try {
+        const suggestion = await generateDescription({
+            name,
+            type,
+            location,
+            condition,
+        });
+
+        return res.status(200).json(suggestion);
+    } catch (error) {
+        return res.status(502).json({
+            message: error.message,
+        });
+    }
+});
+
 // CREATE WATER RESOURCE
 app.post(
     "/api/water-resources",
@@ -431,6 +472,7 @@ app.post(
                 type,
                 location,
                 description,
+                condition,
                 farmer,
             } = req.body;
 
@@ -449,6 +491,7 @@ app.post(
                     type,
                     location,
                     description,
+                    condition,
                     farmer,
                 });
 
