@@ -137,7 +137,6 @@ npm install
 npm test
 npm run check
 ```
-
 Run frontend checks:
 
 ```powershell
