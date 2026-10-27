@@ -154,7 +154,9 @@ The Jest API tests mock external database and LLM behavior; they do not prove th
 - **Frontend:** [https://dulcet-rugelach-deabd2.netlify.app/](https://dulcet-rugelach-deabd2.netlify.app/)
 - **Backend:** [https://s92-kevinjoeratchagar-capstone.onrender.com/](https://s92-kevinjoeratchagar-capstone.onrender.com/)
 
-These are the deployment URLs provided for the project. During submission preparation, the frontend returned **401 Unauthorized** and the backend did not respond before the request timed out. They could not be verified as publicly usable, and live database connectivity, authentication, and end-to-end workflows could not be tested. The site/service owner should check Netlify deploy-access settings and the published deploy, then check Render service status/logs, environment variables, and MongoDB network access. Re-test both URLs after making deployment changes; do not treat these links as confirmed working until they respond successfully.
+These are the deployment URLs provided for the project. Checked on **27 October 2026**, the frontend returned **401 Unauthorized**. Requests to the backend timed out in one check, and a separate health-endpoint check returned **503 Service Unavailable**. The links therefore could not be verified as publicly usable, and live database connectivity, authentication, and end-to-end workflows could not be tested.
+
+To investigate, check that the latest Netlify deploy is published and review the site's access/password protection settings. For Render, check the service state and deploy logs, confirm its required environment variables are set, and verify that its MongoDB URI is reachable from Render. The repository's `netlify.toml` sets the frontend API origin to the supplied Render URL. Re-test both links after deployment changes; do not treat them as confirmed working until they respond successfully.
 
 ## API routes
 
