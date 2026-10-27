@@ -1,0 +1,13 @@
+﻿meta {
+  name: Delete Water Resource
+  type: http
+  seq: 9
+}
+delete {
+  url: http://localhost:5000/api/water-resources/6ae0bea8531041387ab4abd3
+  body: none
+  auth: bearer
+}
+auth:bearer {
+  token: {{token}}
+}

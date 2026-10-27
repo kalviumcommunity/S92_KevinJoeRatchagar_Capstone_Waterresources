@@ -1,0 +1,25 @@
+﻿meta {
+  name: Create Water Resource
+  type: http
+  seq: 6
+}
+post {
+  url: http://localhost:5000/api/water-resources
+  body: json
+  auth: bearer
+}
+auth:bearer {
+  token: {{token}}
+}
+headers {
+  Content-Type: application/json
+}
+body:json {
+  {
+    "name": "Test Water Resource",
+    "type": "Pond",
+    "location": "Chennai",
+    "description": "Test record for API documentation",
+    "farmer": "REPLACE_WITH_VALID_FARMER_ID"
+  }
+}

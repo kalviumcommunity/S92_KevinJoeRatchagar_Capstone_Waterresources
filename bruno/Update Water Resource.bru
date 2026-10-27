@@ -1,0 +1,24 @@
+﻿meta {
+  name: Update Water Resource
+  type: http
+  seq: 8
+}
+put {
+  url: http://localhost:5000/api/water-resources/6ae0bea8531041387ab4abd3
+  body: json
+  auth: bearer
+}
+auth:bearer {
+  token: {{token}}
+}
+headers {
+  Content-Type: application/json
+}
+body:json {
+  {
+    "name": "Updated Test Water Resource",
+    "type": "Pond",
+    "location": "Chennai",
+    "description": "Updated test description"
+  }
+}
