@@ -64,17 +64,38 @@ npm run dev
 
 The client reads and writes water resources through `GET` and `POST` at `/api/water-resources`. It also supports `DELETE /api/water-resources/:id`.
 
-## Run backend tests
+## Run with Docker Compose
 
-From the project root, install the server dependencies and run the Jest tests:
+1. Install and start Docker Desktop.
+2. From the project root, create a local environment file from the example:
 
-```bash
-cd server
-npm install
-npm test
-```
+   ```powershell
+   Copy-Item .env.example .env
+   ```
 
-The API tests exercise Express routes with database models mocked, so they do not require a live MongoDB connection.
+3. Edit `.env` and replace the example MongoDB password and JWT secret with strong values. Keep the MongoDB password alphanumeric because Compose uses it in the connection URI. Google OAuth variables are optional unless Google login is being configured.
+4. Build and start the frontend, API, and MongoDB:
+
+   ```powershell
+   docker compose up --build -d
+   ```
+
+5. Check container status and test the frontend and API:
+
+   ```powershell
+   docker compose ps
+   Invoke-WebRequest http://localhost:8080
+   Invoke-RestMethod http://localhost:5000/api/health
+   ```
+
+   Open `http://localhost:8080` in a browser. The frontend proxies `/api` and `/uploads` requests to the backend. The backend connects to the Compose MongoDB service; data and uploaded files are stored in named volumes.
+6. Stop the containers when finished:
+
+   ```powershell
+   docker compose down
+   ```
+
+   To also delete the database and uploaded files, use `docker compose down --volumes`.
 
 ### Tools
 - Git
