@@ -154,7 +154,7 @@ The Jest API tests mock external database and LLM behavior; they do not prove th
 - **Frontend:** [https://dulcet-rugelach-deabd2.netlify.app/](https://dulcet-rugelach-deabd2.netlify.app/)
 - **Backend:** [https://s92-kevinjoeratchagar-capstone.onrender.com/](https://s92-kevinjoeratchagar-capstone.onrender.com/)
 
-These are the deployment URLs provided for the project. Checked on **27 October 2026**, the frontend returned **401 Unauthorized**. Requests to the backend timed out in one check, and a separate health-endpoint check returned **503 Service Unavailable**. The links therefore could not be verified as publicly usable, and live database connectivity, authentication, and end-to-end workflows could not be tested.
+These are the deployment URLs provided for the project. Checked on **27 October 2026**, the frontend returned **401 Unauthorized**. Requests to the backend timed out in one check, and a separate health-endpoint check returned **503 Service Unavailable**. The links therefore could not be verified as publicly usable, and live authentication and end-to-end workflows could not be tested. A local API startup did connect to MongoDB, and local `GET /api/health` and `GET /api/water-resources` both returned HTTP 200.
 
 To investigate, check that the latest Netlify deploy is published and review the site's access/password protection settings. For Render, check the service state and deploy logs, confirm its required environment variables are set, and verify that its MongoDB URI is reachable from Render. The repository's `netlify.toml` sets the frontend API origin to the supplied Render URL. Re-test both links after deployment changes; do not treat them as confirmed working until they respond successfully.
 
@@ -215,11 +215,11 @@ server/.env.example     Backend local environment template
 - Passport registers Google OAuth only when server credentials exist, so the app can start without OAuth secrets.
 - The description provider uses the built-in Node `fetch` API to avoid a new runtime dependency. A local template keeps the interface usable without claiming a real LLM was used.
 - Uploaded files are stored on local disk under `server/uploads`; persistent storage and upload protections should be reviewed for production.
-- Backend create/delete/upload routes are unauthenticated, the frontend has no full auth UI, and public deployment access and database connectivity remain unverified as noted above.
+- Backend create/delete/upload routes are unauthenticated, the frontend has no full auth UI, and public deployment access remains unverified as noted above.
 
 ## Future improvements
 
-- Verify and restore public deployment access and test the full live workflow.
+- Restore public deployment access and test the full live workflow.
 - Add frontend authentication and authorization for write, delete, and upload endpoints.
 - Add automated integration tests against an isolated test database and provider contract tests.
 - Move uploads to durable object storage and add file-type validation.
