@@ -219,6 +219,37 @@ textarea:focus {
     grid-column: 1 / -1;
 }
 
+.suggestion-controls {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.suggestion-button {
+    background: #e5eee6;
+    border: 1px solid var(--line);
+    color: var(--green);
+    cursor: pointer;
+    font: inherit;
+    padding: 10px 14px;
+}
+
+.suggestion-button:disabled {
+    cursor: wait;
+    opacity: .65;
+}
+
+.suggestion-note {
+    color: var(--muted);
+    font-size: .78rem;
+}
+
+.suggestion-error {
+    color: #9b3925;
+    font-size: .85rem;
+}
+
 .submit-button {
     background: var(--ink);
     color: #fffdf8;
