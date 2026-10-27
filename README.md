@@ -137,6 +137,38 @@ npm install
 npm test
 npm run check
 ```
+## Run with Docker Compose
+
+1. Install and start Docker Desktop.
+2. From the project root, create a local environment file from the example:
+
+   ```powershell
+   Copy-Item .env.example .env
+   ```
+
+3. Edit `.env` and replace the example MongoDB password and JWT secret with strong values. Keep the MongoDB password alphanumeric because Compose uses it in the connection URI. Google OAuth variables are optional unless Google login is being configured.
+4. Build and start the frontend, API, and MongoDB:
+
+   ```powershell
+   docker compose up --build -d
+   ```
+
+5. Check container status and test the frontend and API:
+
+   ```powershell
+   docker compose ps
+   Invoke-WebRequest http://localhost:8080
+   Invoke-RestMethod http://localhost:5000/api/health
+   ```
+
+   Open `http://localhost:8080` in a browser. The frontend proxies `/api` and `/uploads` requests to the backend. The backend connects to the Compose MongoDB service; data and uploaded files are stored in named volumes.
+6. Stop the containers when finished:
+
+   ```powershell
+   docker compose down
+   ```
+
+   To also delete the database and uploaded files, use `docker compose down --volumes`.
 
 Run frontend checks:
 
