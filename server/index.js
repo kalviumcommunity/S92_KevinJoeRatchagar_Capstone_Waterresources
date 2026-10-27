@@ -1,10 +1,11 @@
 const express = require("express");
 const mongoose = require("mongoose");
-const dns = require("dns");
 const path = require("path");
+const fs = require("fs");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const cors = require("cors");
+const multer = require("multer");
 
 // =====================================================
 // LOAD ENVIRONMENT VARIABLES FIRST
@@ -42,11 +43,27 @@ app.use(express.json());
 // Initialize Passport
 app.use(passport.initialize());
 
-// =====================================================
-// DNS
-// =====================================================
+const uploadDir = path.join(__dirname, "uploads");
+fs.mkdirSync(uploadDir, { recursive: true });
+app.use("/uploads", express.static(uploadDir));
 
-dns.setServers(["8.8.8.8", "1.1.1.1"]);
+const storage = multer.diskStorage({
+    destination: (_req, _file, callback) => {
+        callback(null, uploadDir);
+    },
+    filename: (_req, file, callback) => {
+        const safeName = path.basename(file.originalname)
+            .replace(/[^a-zA-Z0-9._-]/g, "_");
+        callback(null, `${Date.now()}-${safeName}`);
+    },
+});
+
+const upload = multer({
+    storage,
+    limits: {
+        fileSize: 5 * 1024 * 1024,
+    },
+});
 
 // =====================================================
 // HOME ROUTE
@@ -55,6 +72,42 @@ dns.setServers(["8.8.8.8", "1.1.1.1"]);
 app.get("/", (req, res) => {
     res.json({
         message: "AquaShare API is running",
+    });
+});
+
+app.get("/api/health", (req, res) => {
+    res.status(200).json({
+        status: "OK",
+        message: "Server is healthy",
+    });
+});
+
+app.post("/api/upload", (req, res) => {
+    upload.single("file")(req, res, (error) => {
+        if (error) {
+            if (error instanceof multer.MulterError &&
+                error.code === "LIMIT_FILE_SIZE") {
+                return res.status(400).json({
+                    message: "File exceeds the 5 MB limit",
+                });
+            }
+
+            return res.status(400).json({
+                message: "Unable to upload file",
+            });
+        }
+
+        if (!req.file) {
+            return res.status(400).json({
+                message: "Please select a file to upload",
+            });
+        }
+
+        return res.status(200).json({
+            message: "File uploaded successfully",
+            filename: req.file.filename,
+            url: `/uploads/${req.file.filename}`,
+        });
     });
 });
 
@@ -371,7 +424,6 @@ app.get(
 // CREATE WATER RESOURCE
 app.post(
     "/api/water-resources",
-    authenticateToken,
     async(req, res) => {
         try {
             const {
@@ -402,7 +454,7 @@ app.post(
 
             res.status(201).json({
                 message: "Water resource created successfully",
-                waterResource,
+                data: waterResource,
             });
         } catch (error) {
             console.error(
@@ -424,10 +476,12 @@ app.get(
     async(req, res) => {
         try {
             const resources =
-                await WaterResource.find()
-                .populate("farmer");
+                await WaterResource.find();
 
-            res.json(resources);
+            res.status(200).json({
+                count: resources.length,
+                data: resources,
+            });
         } catch (error) {
             console.error(
                 "Get water resources error:",
@@ -484,7 +538,6 @@ app.put(
 // DELETE WATER RESOURCE
 app.delete(
     "/api/water-resources/:id",
-    authenticateToken,
     async(req, res) => {
         try {
             const resource =
@@ -500,6 +553,7 @@ app.delete(
 
             res.json({
                 message: "Water resource deleted successfully",
+                data: resource,
             });
         } catch (error) {
             console.error(
@@ -516,25 +570,53 @@ app.delete(
 );
 
 // =====================================================
-// MONGODB CONNECTION
+// SERVER STARTUP
 // =====================================================
 
-mongoose
-    .connect(process.env.MONGODB_URI)
-    .then(() => {
-        console.log(
-            "MongoDB connected successfully"
-        );
+const PORT = process.env.PORT || 5000;
 
-        app.listen(5000, () => {
-            console.log(
-                "Server running on http://localhost:5000"
-            );
-        });
-    })
-    .catch((error) => {
-        console.error(
-            "MongoDB connection error:",
-            error
+async function startServer() {
+    if (!process.env.MONGODB_URI) {
+        throw new Error(
+            "MONGODB_URI is missing. Configure it in server/.env locally or in Render Environment Variables."
         );
+    }
+
+    try {
+        await mongoose.connect(process.env.MONGODB_URI);
+    } catch (error) {
+        const errorName = error instanceof Error ? error.name : "UnknownError";
+        const code = error && error.code;
+        const codeDescription = code ? ` (code ${code})` : "";
+        throw new Error(
+            `MongoDB connection failed (${errorName}${codeDescription}). Check MONGODB_URI, Atlas Network Access, and database-user permissions.`
+        );
+    }
+
+    console.log("MongoDB connected");
+
+    return new Promise((resolve, reject) => {
+        const server = app.listen(PORT, "0.0.0.0", () => {
+            console.log(`Server running on port ${PORT}`);
+            resolve(server);
+        });
+        server.once("error", reject);
     });
+}
+
+function runServer() {
+    startServer().catch((error) => {
+        console.error("Server startup failed:", error.message);
+        process.exitCode = 1;
+    });
+}
+
+if (require.main === module) {
+    runServer();
+}
+
+module.exports = {
+    app,
+    startServer,
+    runServer,
+};
