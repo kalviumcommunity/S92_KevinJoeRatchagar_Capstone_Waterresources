@@ -64,6 +64,18 @@ npm run dev
 
 The client reads and writes water resources through `GET` and `POST` at `/api/water-resources`. It also supports `DELETE /api/water-resources/:id`.
 
+## Run backend tests
+
+From the project root, install the server dependencies and run the Jest tests:
+
+```bash
+cd server
+npm install
+npm test
+```
+
+The API tests exercise Express routes with database models mocked, so they do not require a live MongoDB connection.
+
 ### Tools
 - Git
 - GitHub
