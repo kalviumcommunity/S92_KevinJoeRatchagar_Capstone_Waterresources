@@ -485,6 +485,12 @@ app.post(
                 });
             }
 
+            if (!farmer) {
+                return res.status(400).json({
+                    message: "Farmer is required",
+                });
+            }
+
             const waterResource =
                 await WaterResource.create({
                     name,

@@ -37,7 +37,7 @@ In local development, the Vite development server proxies `/api` and `/uploads` 
 
 ## Key features in this repository
 
-- Create and list water-resource records, including name, type, location, optional condition, description, and farmer reference.
+- Create and list water-resource records, including name, type, location, optional condition, description, and a required farmer association.
 - Update a water-resource record with a valid JWT and delete a record through the API.
 - Register and log in with a password; passwords are hashed with bcryptjs and login returns a signed JWT.
 - Optional Google OAuth routes when server-side OAuth credentials are configured.
@@ -45,7 +45,7 @@ In local development, the Vite development server proxies `/api` and `/uploads` 
 - Generate an editable resource-description suggestion using a configured LLM, or return a clearly labelled local fallback.
 - Health-check endpoints for the API.
 
-The current React interface focuses on listing, adding, and deleting resources and suggesting descriptions. Authentication and update routes exist in the backend; the frontend does not currently provide a complete sign-in or edit workflow.
+The current React interface focuses on listing, adding, and deleting resources and suggesting descriptions. The add form loads farmers from the API and requires selecting one because the resource model requires a farmer association. If the database has no farmers yet, create one through the Bruno `Create Farmer` request first. Authentication and update routes exist in the backend; the frontend does not currently provide a complete sign-in or edit workflow.
 
 ## Installation
 

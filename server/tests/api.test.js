@@ -113,6 +113,21 @@ test("POST /api/water-resources creates and returns a valid resource", async() =
     expect(WaterResource.create).toHaveBeenCalledWith(resourceInput);
 });
 
+test("POST /api/water-resources rejects a missing farmer", async() => {
+    const result = await requestJson("/api/water-resources", {
+        method: "POST",
+        body: JSON.stringify({
+            name: "Community well",
+            type: "well",
+            location: "North field",
+        }),
+    });
+
+    expect(result.status).toBe(400);
+    expect(result.body).toEqual({ message: "Farmer is required" });
+    expect(WaterResource.create).not.toHaveBeenCalled();
+});
+
 test.each([
     ["name", { type: "well", location: "North field" }],
     ["type", { name: "Community well", location: "North field" }],
