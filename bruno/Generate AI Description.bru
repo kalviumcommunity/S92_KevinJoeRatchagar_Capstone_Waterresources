@@ -1,0 +1,21 @@
+meta {
+  name: Generate AI Description
+  type: http
+  seq: 10
+}
+post {
+  url: http://localhost:5000/api/ai/description
+  body: json
+  auth: none
+}
+headers {
+  Content-Type: application/json
+}
+body:json {
+  {
+    "name": "Kaveri Reservoir",
+    "type": "Reservoir",
+    "location": "Tiruchirappalli",
+    "condition": "Water level is moderate"
+  }
+}
