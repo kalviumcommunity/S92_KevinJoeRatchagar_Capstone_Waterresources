@@ -220,7 +220,7 @@ app.post("/api/auth/login", async(req, res) => {
         const {
             email,
             password,
-        } = req.body;
+        } = req.body || {};
 
         if (!email || !password) {
             return res.status(400).json({
@@ -428,7 +428,7 @@ app.post("/api/ai/description", async(req, res) => {
         type,
         location,
         condition = "",
-    } = req.body;
+    } = req.body || {};
 
     if (![name, type, location].every(
         (value) => typeof value === "string" && value.trim()
@@ -482,6 +482,12 @@ app.post(
             ) {
                 return res.status(400).json({
                     message: "Name, type and location are required",
+                });
+            }
+
+            if (!farmer) {
+                return res.status(400).json({
+                    message: "Farmer is required",
                 });
             }
 

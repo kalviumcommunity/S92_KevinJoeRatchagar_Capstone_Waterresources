@@ -1,5 +1,17 @@
 node_modules
 server/node_modules
+
+# Local environment files; keep only the checked-in templates.
 .env
+.env.*
+!.env.example
 server/.env
+server/.env.*
+!server/.env.example
+client/.env
+client/.env.*
+!client/.env.example
+
+# Generated and local-only files.
+client/dist/
 server/uploads/
